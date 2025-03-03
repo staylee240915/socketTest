@@ -49,21 +49,22 @@ int main(void){
     while(clientSocket != -1){
         puts("accept : 새로운 client 연결");
         //연결시 연결정보에 대한 내용을 추후 로그로 기록 남길 예정.
-    }
 
-    char buffer[128] = {0};
+        char buffer[128] = {0};
     
-    int nRecv = recv(clientSocket,buffer,sizeof(buffer),0);
-    while(nRecv != -1){
-        //수신한 문자열을 그대로 client에 반환하여 전송.
-        send(clientSocket,buffer,sizeof(buffer),0);
-        cout<<"message from client"<<clientSocket<<"\n";
-        puts(buffer);
-        //메모리 초기화.
-        memset(buffer,0,sizeof(buffer));
+        int nRecv = recv(clientSocket,buffer,sizeof(buffer),0);
+        while(nRecv != -1){
+            //수신한 문자열을 그대로 client에 반환하여 전송.
+            send(clientSocket,buffer,sizeof(buffer),0);
+            cout<<"message from client"<<clientSocket<<"\n";
+            puts(buffer);
+            //메모리 초기화.
+            memset(buffer,0,sizeof(buffer));
+        }
+        //client에서 shutdown 읽기버퍼 쓰기버퍼 모두 종료.
+        shutdown(serverSocket,SHUT_RDWR);
+        close(clientSocket);
 
-        //client에 shutdown 읽기버퍼 쓰기버퍼 모두 종료.
-        shutdown(clientSocket,SHUT_RDWR);
         puts("connection closed.");
     }
     //리슨 소켓 닫기
