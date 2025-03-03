@@ -1,6 +1,6 @@
 #include <cstring>
 #include <iostream>
-#include <netinet/in.h> //인터넷 프로토콜 (iptv관련 구조체와 상수 정의 헤더)
+#include <netinet/in.h> //인터넷 프로토콜 (ipv4관련 구조체와 상수 정의 헤더)
 #include <sys/socket.h> //소켓프로그래밍을 위한 기본적인 함수와 구조체 상수 정의
 #include <unistd.h>
 using namespace std;
@@ -30,7 +30,7 @@ int main(void){
     
     char buffer[1024] = {0};
     recv(clientSocket,buffer,sizeof(buffer),0);
-    cout<<"message from client : "<<clientSocket<<"\n";
+    cout<<"message from client "<<clientSocket<<" : "<< buffer<<"\n";
 
     close(serverSocket);
 
