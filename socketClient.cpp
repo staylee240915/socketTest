@@ -7,6 +7,10 @@
 #include <arpa/inet.h>
 
 using namespace std;
+const int port = 9032;
+const int maxConn = SOMAXCONN;
+const char* serverADDR = "127.0.0.1";
+#define BUF_SIZE 128;
 
 int main(void){
 
@@ -15,21 +19,32 @@ int main(void){
 
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET; //ipv4
-    serverAddress.sin_port = htons(9032); //9032 포트
-    serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1"); //연결받을 주소
+    serverAddress.sin_port = htons(port); //9032 포트
+    serverAddress.sin_addr.s_addr = inet_addr(serverADDR); //연결받을 주소
 
     //소켓 연결 시작.
-    connect(clientSocket,(struct sockaddr*)&serverAddress, sizeof(serverAddress));
-
+    int isConn = connect(clientSocket,(struct sockaddr*)&serverAddress, sizeof(serverAddress));
+    if(isConn ==-1){
+        //에러코드 반환 (추후 에러관련 내용을 에러 코드를 반환하고, 로그에 저장하도록 개선.)
+        puts("ERROR : 서버와 연결할 수 없습니다.");
+        return 0;
+    }
     //데이터 입력
-    char buf[100]={""};
-    fgets(buf,sizeof(buf), stdin);
-    
-    //데이터 전달. -> buff 부분에서 protocol 정의하여, 전송할 내용 전달할 것.
-    send(clientSocket,buf,strlen(buf),0);
-    
-    //전송 종료.
-    close(clientSocket);
+    char buf[128]={0};
+    while(1){
+        //입력
+        fgets(buf,sizeof(buf), stdin);
+        if(strcmp(buf,"EXIT")==0) break;
+        //데이터 전달. -> buff 부분에서 protocol 정의하여, 전송할 내용 전달할 것.
+        send(clientSocket,buf,strlen(buf)+1,0);
+        memset(buf,0,sizeof(buf));
+        
+        //client에서 shutdown 전송.
+        shutdown(clientSocket,SHUT_RDWR);
+        //전송 종료.
+        close(clientSocket);
+    }
+
 
     return 0;
 }
