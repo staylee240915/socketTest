@@ -38,13 +38,11 @@ int main(void){
         //데이터 전달. -> buff 부분에서 protocol 정의하여, 전송할 내용 전달할 것.
         send(clientSocket,buf,strlen(buf)+1,0);
         memset(buf,0,sizeof(buf));
-        
-        //client에서 shutdown 전송.
-        shutdown(clientSocket,SHUT_RDWR);
-        //전송 종료.
-        close(clientSocket);
     }
-
+    //client에서 shutdown 전송.
+    shutdown(clientSocket,SHUT_RDWR);
+    //전송 종료.
+    close(clientSocket);
 
     return 0;
 }
