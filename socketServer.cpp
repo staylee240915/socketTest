@@ -13,11 +13,46 @@ using namespace std;
 const int port = 9032;
 #define BUF_SIZE 128;
 
+struct threadInfo{
+    int clientSocket;
+    sockaddr_in clientAddr;
+
+};
 void *acceptThread(void *arg){
+
+    threadInfo *thread = (threadInfo*)arg;
+    int clientSocket = thread->clientSocket;
+    sockaddr_in clientAddr = thread->clientAddr;
     //client -> server로 보내는 내용에 대한 receive buffer
     char sRecvBuffer[128] = { 0 };
+    int Recv;
+    while((Recv=recv(clientSocket,sRecvBuffer,sizeof(sRecvBuffer)-1,0))>0){
+        sRecvBuffer[Recv] = '\0';  // 받은 데이터를 명확히 문자열로 처리하기 위해서
+
+        //수신한 문자열을 그대로 client에 반환하여 전송.
+        send(clientSocket,sRecvBuffer,Recv,0);
+
+        cout<<"message from client"<<clientSocket<<"\n";
+        //메세지 표출
+        puts(sRecvBuffer);
+        //메모리 초기화.
+        memset(sRecvBuffer,0,sizeof(sRecvBuffer));
+    }
+    if(Recv == 0){
+        cout << "클라이언트가 연결을 종료하였습니다.\n";
+        //client에서 shutdown 읽기버퍼 쓰기버퍼 모두 종료.
+        shutdown(clientSocket,SHUT_RDWR);
+        
+        //서버와 연결된 클라이언트의 소켓 close;
+        close(clientSocket);
+        delete thread; // 메모리 해제 필수
+        pthread_exit(NULL);
+        puts("connection closed."); fflush(stdout);
+    }else{
+        perror("메세지 수신 오류");
+    }
+
 }
-void *thread_function(void *ptr);
 
 int main(void){
 
@@ -51,14 +86,20 @@ int main(void){
     int nRecv = 0;
     int clientSocket =0;
     sockaddr_in clientAddr = { 0 };
-    socklen_t clientAddrLen;
-    vector<pthread_t> cpthread();
-    pthread_attr_t cpthreadAttr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    vector<pthread_t> cpthread;
+
+
     //4. 클라이언트의 연결을 받아 새로운 소켓 생성
     //accept의 경우 socket을 위한 파일지정번호를 반환.
     while((clientSocket = accept(serverSocket, 
         (sockaddr*)&clientAddr, &clientAddrLen))!=-1)
     {
+        threadInfo *tInfo = new threadInfo;
+        tInfo->clientSocket = clientSocket;
+        tInfo->clientAddr = clientAddr;
+        pthread_attr_t cpthreadAttr;
+
         //새 client가 들어올 때 마다 새로운 스레드 생성
         //새 스레드 속성 오브젝트 작성.
         pthread_t threads;
@@ -67,38 +108,19 @@ int main(void){
         if(pthread_create( 
             &threads,
             NULL,
-            thread_function,
-            (void *) "thread 1"
-        )!=-1){
-            cout<<"thread 생성 실패"<<"\n";
-        };
-
-        cout << "클라이언트와 연결이 완료되었습니다" << endl;
-        cout << "Client IP: " << inet_ntoa(clientAddr.sin_addr) << endl;
-		cout << "Port: " << ntohs(clientAddr.sin_port) << endl;
-
-        puts("accept : 새로운 client 연결"); fflush(stdout);
-        //연결시 연결정보에 대한 내용을 추후 로그로 기록 남길 예정.
-
-        char buffer[128] = {0};
-    
-        while((nRecv=recv(clientSocket,buffer,sizeof(buffer),0))!=-1){
-            //수신한 문자열을 그대로 client에 반환하여 전송.
-            send(clientSocket,buffer,sizeof(buffer),0);
-
-            cout<<"message from client"<<clientSocket<<"\n";
-            //메세지 표출
-            puts(buffer);
-            //메모리 초기화.
-            memset(buffer,0,sizeof(buffer));
+            acceptThread,
+            (void *) tInfo
+        )!=0){
+            perror ("thread 생성 실패");
+            close(clientSocket);
+            continue;
         }
-        //client에서 shutdown 읽기버퍼 쓰기버퍼 모두 종료.
-        shutdown(serverSocket,SHUT_RDWR);
-        
-        //서버와 연결된 클라이언트의 소켓 close;
-        close(clientSocket);
-
-        puts("connection closed."); fflush(stdout);
+        else{
+            cpthread.push_back(threads);
+            cout << "클라이언트와 연결이 완료되었습니다" << endl;
+            cout << "Client IP: " << inet_ntoa(clientAddr.sin_addr) << endl;
+            cout << "Port: " << ntohs(clientAddr.sin_port) << endl;
+        };
     }
     //리슨 소켓 닫기
     close(serverSocket);
