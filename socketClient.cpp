@@ -17,7 +17,7 @@ int main(void){
     //ipv4와 tcp를 이용한 소켓client 생성
     int clientSocket = socket(AF_INET, SOCK_STREAM,0);
 
-    sockaddr_in serverAddress;
+    sockaddr_in serverAddress = { 0 };
     serverAddress.sin_family = AF_INET; //ipv4
     serverAddress.sin_port = htons(port); //9032 포트
     serverAddress.sin_addr.s_addr = inet_addr(serverADDR); //연결받을 주소
